@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { auth, googleProvider } from "@/lib/firebase";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, setPersistence } from "firebase/auth";
+import { browserLocalPersistence } from "firebase/auth";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const Login: React.FC = () => {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/profile");
+      navigate("/planner");
     } catch (err) {
       setError("Invalid email or password");
     } finally {
@@ -32,10 +33,20 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      await signInWithPopup(auth, googleProvider);
-      navigate("/profile");
+      // Configure persistence
+      await setPersistence(auth, browserLocalPersistence);
+      
+      // Configure custom parameters
+      googleProvider.setCustomParameters({
+        prompt: 'select_account'
+      });
+
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log("Google sign in successful", result.user);
+      navigate("/planner");
     } catch (err) {
-      setError("Could not sign in with Google");
+      console.error("Google sign in error:", err);
+      setError("Could not sign in with Google. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -52,6 +63,9 @@ const Login: React.FC = () => {
         {error && (
           <div className="p-3 text-sm text-destructive-foreground bg-destructive/10 rounded">
             {error}
+            <pre className="text-xs mt-2 text-muted-foreground">
+              Try clearing your browser cache and cookies if the issue persists.
+            </pre>
           </div>
         )}
 
@@ -105,13 +119,24 @@ const Login: React.FC = () => {
         </div>
 
         <Button
-          variant="outline"
-          type="button"
-          className="w-full"
           onClick={handleGoogleLogin}
           disabled={loading}
+          className="w-full"
+          variant="outline"
         >
-          Continue with Google
+          {loading ? (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin mr-2 h-4 w-4 border-b-2 border-primary" />
+              Signing in...
+            </div>
+          ) : (
+            <>
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                {/* Google icon */}
+              </svg>
+              Sign in with Google
+            </>
+          )}
         </Button>
 
         <p className="text-center text-sm">

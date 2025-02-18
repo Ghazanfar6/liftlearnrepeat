@@ -7,7 +7,7 @@ import { ActiveWorkout, ActiveWorkoutExercise, WorkoutTimer } from './activeWork
 interface ActiveWorkoutStore {
   activeWorkout: ActiveWorkout | null;
   timer: WorkoutTimer | null;
-  startWorkout: (workout: any, userId: string) => void;
+  startWorkout: (workout: Workout, userId: string) => void;
   endWorkout: () => Promise<void>;
   updateExerciseSet: (exerciseIndex: number, setIndex: number, reps: number, weight: number) => void;
   completeSet: (exerciseIndex: number, setIndex: number) => void;

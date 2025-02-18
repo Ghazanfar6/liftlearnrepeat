@@ -1,11 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
-import { User, Trophy, Calendar, Dumbbell } from "lucide-react";
-import { useEffect, useState } from "react";
-import { doc, getDoc, setDoc, getFirestore } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useEffect, useState } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Calendar, Trophy, Dumbbell, Target } from 'lucide-react';
+import { useCurrentUser } from '@/app/store/user';
+import Navigation from '@/components/Navigation';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface UserProfile {
   displayName: string;
@@ -16,120 +16,158 @@ interface UserProfile {
   streak: number;
 }
 
-export default function Profile() {
-  const { currentUser } = useAuth();
-  const navigate = useNavigate();
+const Profile: React.FC = () => {
+  const { user } = useCurrentUser();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!currentUser) return;
-
-      const profileRef = doc(db, 'userProfiles', currentUser.uid);
-      const profileSnap = await getDoc(profileRef);
-
-      if (profileSnap.exists()) {
-        setProfile(profileSnap.data() as UserProfile);
-      } else {
-        // Create default profile
-        const defaultProfile: UserProfile = {
-          displayName: currentUser.displayName || 'Fitness Enthusiast',
-          email: currentUser.email || '',
-          joinedDate: new Date().toISOString(),
-          workoutsCompleted: 0,
-          personalBests: 0,
-          streak: 0
-        };
-        await setDoc(profileRef, defaultProfile);
-        setProfile(defaultProfile);
+      if (!user) {
+        setError("No user found");
+        setLoading(false);
+        return;
       }
-      setIsLoading(false);
+
+      try {
+        console.log("Fetching profile for user:", user.uid); // Debug log
+        const profileRef = doc(db, 'userProfiles', user.uid);
+        const profileSnap = await getDoc(profileRef);
+
+        if (profileSnap.exists()) {
+          console.log("Profile exists:", profileSnap.data()); // Debug log
+          setProfile(profileSnap.data() as UserProfile);
+        } else {
+          console.log("Creating new profile"); // Debug log
+          // Create default profile
+          const defaultProfile: UserProfile = {
+            displayName: user.displayName || 'Fitness Enthusiast',
+            email: user.email || '',
+            joinedDate: new Date().toISOString(),
+            workoutsCompleted: 0,
+            personalBests: 0,
+            streak: 0
+          };
+
+          // Save the default profile to Firestore
+          try {
+            await setDoc(profileRef, defaultProfile);
+            console.log("Default profile created successfully"); // Debug log
+            setProfile(defaultProfile);
+          } catch (error) {
+            console.error("Error creating default profile:", error);
+            setError("Failed to create profile");
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching/creating profile:', error);
+        setError("Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchProfile();
-  }, [currentUser]);
+  }, [user]);
 
-  if (isLoading) {
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error || !profile || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-destructive">Error Loading Profile</h1>
+            <p className="text-muted-foreground mt-2">
+              {error || "There was an error loading your profile. Please try again later."}
+            </p>
+            {/* Add retry button */}
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Dumbbell className="w-6 h-6" />
-            <span className="text-xl font-bold">LiftLearn Repeat</span>
-          </div>
-          <Button variant="ghost" onClick={() => navigate("/Logout")}>Log out</Button>
-        </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-8">
+      <Navigation />
+      <div className="container mx-auto px-4 py-8">
         {/* Profile Header */}
-        <div className="flex items-center space-x-4 mb-8">
-          <div className="bg-primary/10 p-4 rounded-full">
-            <User className="w-8 h-8 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">{profile?.displayName}</h1>
-            <p className="text-muted-foreground">{profile?.email}</p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">{profile.displayName}</h1>
+          <p className="text-muted-foreground">{profile.email}</p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Dumbbell className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Workouts Completed</p>
-                <p className="text-2xl font-bold">{profile?.workoutsCompleted}</p>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <Dumbbell className="w-5 h-5 mr-2" />
+                Workouts Completed
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{profile.workoutsCompleted}</p>
+            </CardContent>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Trophy className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Personal Bests</p>
-                <p className="text-2xl font-bold">{profile?.personalBests}</p>
-              </div>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <Trophy className="w-5 h-5 mr-2" />
+                Personal Bests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{profile.personalBests}</p>
+            </CardContent>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Calendar className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Current Streak</p>
-                <p className="text-2xl font-bold">{profile?.streak} days</p>
-              </div>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <Target className="w-5 h-5 mr-2" />
+                Current Streak
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{profile.streak} days</p>
+            </CardContent>
           </Card>
         </div>
 
         {/* Member Since */}
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-2">Member Since</h2>
-          <p className="text-muted-foreground">
-            {new Date(profile?.joinedDate || '').toLocaleDateString()}
-          </p>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Calendar className="w-5 h-5 mr-2" />
+              Member Since
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg">
+              {new Date(profile.joinedDate).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
+          </CardContent>
         </Card>
-      </main>
+      </div>
     </div>
   );
-}
+};
+
+export default Profile;

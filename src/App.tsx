@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
@@ -7,13 +8,16 @@ import Profile from './pages/Profile';
 import Logout from './pages/Logout';
 import ResetPassword from './pages/ResetPassword';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useCurrentUser } from './app/store/user';
+import LoadingSpinner from './components/ui/LoadingSpinner';
+import WorkoutPlanner from './pages/WorkoutPlanner';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+  const { user, loading } = useCurrentUser();
 
   if (loading) {
     return (
@@ -23,33 +27,43 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
     );
   }
 
-  return currentUser ? <>{children}</> : <Navigate to="/login" />;
+  return user ? <>{children}</> : <Navigate to="/login" />;
 };
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        
-        {/* Protected Routes */}
-        <Route
-          path="/profile"
-          element={
-            <PrivateRoute>
-              <Profile />
-            </PrivateRoute>
-          }
-        />
-        <Route path="/logout" element={<Logout />} />
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          
+          {/* Protected Routes */}
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/planner"
+            element={
+              <PrivateRoute>
+                <WorkoutPlanner />
+              </PrivateRoute>
+            }
+          />
+          <Route path="/logout" element={<Logout />} />
 
-        {/* Catch-all route */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+          {/* Catch-all route */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Suspense>
     </AuthProvider>
   );
 };

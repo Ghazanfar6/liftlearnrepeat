@@ -30,3 +30,12 @@ export interface WorkoutTimer {
   duration: number;
   isRunning: boolean;
 }
+
+export interface Exercise {
+  id: string;
+  name: string;
+  targetMuscles: string[];
+  equipment: string[];
+  description: string;
+  // Add other necessary fields
+}

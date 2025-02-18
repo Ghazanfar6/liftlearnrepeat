@@ -12,6 +12,8 @@ export function useUserGuardContext() {
       setUser(user);
       if (!user) {
         navigate('/login');
+      } else {
+        navigate('/planner');
       }
     });
 
