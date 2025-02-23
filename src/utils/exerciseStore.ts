@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Exercise } from '@/pages/ExerciseLibrary';
+import { Exercise } from './activeWorkoutTypes';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 

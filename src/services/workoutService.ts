@@ -52,5 +52,12 @@ export const workoutService = {
   async completeWorkout(workoutId: string): Promise<void> {
     const workoutRef = doc(db, 'scheduledWorkouts', workoutId);
     await updateDoc(workoutRef, { completed: true });
+  },
+
+  async getWorkoutHistory(userId: string): Promise<ScheduledWorkout[]> {
+    const workoutsRef = collection(db, 'scheduledWorkouts');
+    const q = query(workoutsRef, where('userId', '==', userId), where('completed', '==', true));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ScheduledWorkout));
   }
 }; 

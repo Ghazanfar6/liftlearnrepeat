@@ -1,4 +1,9 @@
-import { Exercise } from '@/pages/ExerciseLibrary';
+export interface Workout {
+  id: string;
+  name: string;
+  description: string;
+  exercises: ActiveWorkoutExercise[];
+}
 
 export interface WorkoutSet {
   reps: number;

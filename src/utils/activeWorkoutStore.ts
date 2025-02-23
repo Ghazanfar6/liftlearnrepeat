@@ -1,9 +1,8 @@
 import { create } from 'zustand';
-import { Exercise } from '@/pages/ExerciseLibrary';
+import { Exercise } from './activeWorkoutTypes';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ActiveWorkout, ActiveWorkoutExercise, WorkoutTimer } from './activeWorkoutTypes';
-
+import { ActiveWorkout, ActiveWorkoutExercise, WorkoutTimer, Workout } from './activeWorkoutTypes';
 interface ActiveWorkoutStore {
   activeWorkout: ActiveWorkout | null;
   timer: WorkoutTimer | null;

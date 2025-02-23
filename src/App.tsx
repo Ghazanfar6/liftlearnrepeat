@@ -42,14 +42,7 @@ const App: React.FC = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Protected Routes */}
-          <Route
-            path="/profile"
-            element={
-              <PrivateRoute>
-                <Profile />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/logout" element={<Logout />} />
           <Route
             path="/planner"
             element={
@@ -58,7 +51,6 @@ const App: React.FC = () => {
               </PrivateRoute>
             }
           />
-          <Route path="/logout" element={<Logout />} />
 
           {/* Catch-all route */}
           <Route path="*" element={<Navigate to="/" />} />
